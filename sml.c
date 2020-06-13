@@ -217,28 +217,16 @@ struct graph* randomization(struct graph* G,int perm_capacity){
 
     }
 
- /* for (i=1;i<=G->n;i++){
-
-        printf("permutes[%d]= : %d \n",i,permutes[i]);
-
-
-
-    }*/
-   /* for (i=1;i<=G->n;i++)
-        printf("G->reversepermutes[%d] : %d \n",i,G->reversepermutes[i]);
-        */
+ 
     new_G->vwgt=G->vwgt;
     for (i=1; i<=G->n; i++){
        new_G->vtx[permutes[i] + 1]=G->vtx[(i + 1)] - G->vtx[i];
 
-     //  printf("temp_vtx[%d]= : %d \n",i,temp_vtx[i]);
-      // new_G->vtx[i+1]=new_G->vtx[i]+temp_vtx[i+1];
-     //  printf("new_G->vtx[%d]= : %d \n",i,new_G->vtx[i]);
-     //  printf("new_G->vwgt[%d]= : %d \n",i,new_G->vwgt[i]);
+   
     }
     for (i=2; i<=G->n + 1;i++){
             new_G->vtx[i]+= new_G->vtx[i-1];
-          //  printf("new_G->vtx[%d]= : %d \n",i,new_G->vtx[i]);
+         
     }
     new_G->adjncy[0]=0;
     new_G->adjwgt[0]=0;
@@ -258,14 +246,6 @@ struct graph* randomization(struct graph* G,int perm_capacity){
         }
 
     }
-
-
-   /* printf(" ----------------adjncy------------------\n");
-    for (i = 1; i <= 2 * G->m; i++){
-        printf("new_G->adjncy[%d] : %d \n",i , new_G->adjncy[i]);
-        printf("new_G->adjwgt[%d] : %d \n",i , new_G->adjwgt[i]);
-    }*/
-
 
     return new_G;
 }
@@ -307,10 +287,8 @@ struct Bins* LDGpartitioning(int K, struct graph *G, int capacity,int threadnum)
 	//initialize bin ,bin affinity and bin weight to zero
 	struct Bins *binha = Bins(G->n, K);
 	uint32_t *BinAff;
-	//BinAff = (uint32_t*)calloc(K + 1, sizeof(uint32_t));
 	int *Blist;
-	//Blist = (uint32_t*)calloc(K + 1, sizeof(uint32_t));
-
+	
 	int bi;
 
 	for (i = 0; i <= G->n; i++) {
@@ -369,8 +347,6 @@ struct Bins* LDGpartitioning(int K, struct graph *G, int capacity,int threadnum)
             //no neighbor of vertex u is assigned to any bin
             if (bi != 0) {
 
-                
-               // norandom++;
 
                 bmax = 0;
                 for (i=1; i <= bi; i++){
@@ -393,7 +369,6 @@ struct Bins* LDGpartitioning(int K, struct graph *G, int capacity,int threadnum)
 
             if (bi == 0 || bmax == 0) {
 
-              //  printf("U : %d , bi : %d , randomness : %d \n",u,bi,randomness );
                 //if whole vertices will fit in the bins with given capacity
 
                 if (excess <= capacity) {
@@ -401,7 +376,7 @@ struct Bins* LDGpartitioning(int K, struct graph *G, int capacity,int threadnum)
                         while ( ( binha->binwgt[last_bin]+ G->vwgt[u] > (capacity)) ){
                             bizeros++;
 
-                           // printf("Bwt : %d vwgt : %d capacity : %d")
+                    
                           last_bin = ((last_bin % K) + 1);
                           bizeros++;
 
@@ -447,7 +422,7 @@ struct Bins* LDGpartitioning(int K, struct graph *G, int capacity,int threadnum)
             }
 
             binha->Bin[u] = bmax;
-          // printf("bin[%d] : %d by thread : %d \n",u,binha->Bin[u],omp_get_thread_num());
+         
             #pragma omp atomic
             binha->binwgt[bmax] = binha->binwgt[bmax] + G->vwgt[u];
 
@@ -457,7 +432,6 @@ struct Bins* LDGpartitioning(int K, struct graph *G, int capacity,int threadnum)
         double end=omp_get_wtime();
         
 	printf( "Time taken by thread %d is %f\n", omp_get_thread_num(), end-start );
-  //  printf("bizeros : %d \n",bizeros );
 
     }
 
@@ -539,7 +513,7 @@ struct graph* coarsening(int *Bin, int K, uint32_t *binwgt, struct graph *G, int
             t = Bin[v];
             bvix[t] += 1; //this can be problematic
 
-           // printf( "bvix updated by thread %d is %d %d\n", omp_get_thread_num(),t,bvix[t] );
+          
             }
         }
         
@@ -548,38 +522,34 @@ struct graph* coarsening(int *Bin, int K, uint32_t *binwgt, struct graph *G, int
         int s = 0;
         if (ithread == 0){
             s = bvix[1];
-            //printf("s by thread 0 is : %d\n", s);
+            
         }
         #pragma omp for schedule(static) nowait
         for (b = 2; b <= K; b++) {
 
 
-           //  bvix[b] = bvix[b] + bvix[b - 1];
            s += bvix [b];
            bvix[b] = s;
 
         }
         suma[ithread + 1] = s;
-       // printf("suma[%d] : %d\n", ithread + 1, suma[ithread + 1]);
+     
 
         #pragma omp barrier
         int offset = 0;
         for(i=0; i<(ithread+1); i++) {
             offset += suma[i];
         }
-       // printf("offset for thread %d : %d\n",omp_get_thread_num(),offset );
+    
 
         #pragma omp for schedule(static)
         for (b = 2 ; b <= K ; b++) {
            bvix[b] += offset;
-        //   printf( "bvix[%d] : FINAL cumulated by thread %d is %d\n",b, omp_get_thread_num(),bvix[b] );
+       
         }
-
-        //
-   //     printf("after forth pragma: \n");
         bvix[K + 1] = bvix[K];
         #pragma omp barrier
-        //printf("\nbvix[%d] = %d and bvix[%d] = %d in thread : %d\n", K, bvix[K], K+1, bvix[K+1], omp_get_thread_num());
+      
         #pragma omp master
         {
         for (v = 1; v <= G->n; v++) {
@@ -587,22 +557,18 @@ struct graph* coarsening(int *Bin, int K, uint32_t *binwgt, struct graph *G, int
             int f;
             f = bvix[b] - 1;
             BV[f] = v;
-           // printf( "BV[%d] : by thread %d is %d\n",f, omp_get_thread_num(),BV[f] );
             bvix[b] -= 1;
 
             }
         }
-      //  printf("\nAFTER FOR bvix[%d] = %d and bvix[%d] = %d in thread : %d\n", K, bvix[K], K+1, bvix[K+1], omp_get_thread_num());
         #pragma omp barrier
 
         #pragma omp for schedule (static)
         for (b = 1; b <= K; b++) {
 
             kstart = bvix[b];
-           // printf("kstart for thread : %d is %d \n", omp_get_thread_num(),kstart);
-
+          
             kend = bvix[b + 1] - 1;
-          //  printf("kend for thread : %d is %d \n", omp_get_thread_num(),kend);
 
             for (kix = kstart; kix <= kend; kix++) {
                 u = BV[kix];
@@ -616,9 +582,7 @@ struct graph* coarsening(int *Bin, int K, uint32_t *binwgt, struct graph *G, int
                     bmpt = Bmap[bt];
                     if (bt != b && (bmpt == 0 || bmpt != b)) {
                         Gprime->vtx[b] += 1;
-                   //    printf( "Gprime->vtx[%d] : by thread %d is %d\n",b, omp_get_thread_num(), Gprime->vtx[b]);
                         Bmap[bt] = b;
-                     //  printf( "Bmap[%d] : by thread %d is %d\n",bt, omp_get_thread_num(), Bmap[bt]);
                         }
                     }
 
@@ -628,15 +592,13 @@ struct graph* coarsening(int *Bin, int K, uint32_t *binwgt, struct graph *G, int
         
         for (i = 1; i <= K + 1; i++){
             priVtx[i + 1] = Gprime->vtx[i] + priVtx [i];
-          //  printf("priVtx[%d] : %d \n",i,priVtx[i]);
         }
       
        
 
       #pragma omp barrier
        Bmap = (int*)calloc(K + 1, sizeof(int));
-        //cumulative sum
-
+      
         uint64_t l = 0;
         if (ithread == 0)
             l = Gprime->vtx[1];
@@ -645,7 +607,7 @@ struct graph* coarsening(int *Bin, int K, uint32_t *binwgt, struct graph *G, int
         for (b = 2; b <= K; b++) {
 
 
-           //  bvix[b] = bvix[b] + bvix[b - 1];
+          
            l += Gprime->vtx[b];
            Gprime->vtx[b] = l;
 
@@ -659,75 +621,56 @@ struct graph* coarsening(int *Bin, int K, uint32_t *binwgt, struct graph *G, int
         }
 
 
-      //  printf( "Gprime->vtx[1] : FINAL cumulated by thread %d is %d\n", omp_get_thread_num(),Gprime->vtx[1] );
+     
         #pragma omp for schedule(static)
         for (b = 2 ; b <= K ; b++) {
            Gprime->vtx[b] += off;
-         //  printf( "Gprime->vtx[%d] : FINAL cumulated by thread %d is %d\n",b, omp_get_thread_num(),Gprime->vtx[b] );
 
         }
 
         Gprime->vtx[K + 1] = Gprime->vtx[K];
 
         int cadjsize = Gprime->vtx[K + 1];
-       // printf("cadjsize : %d \n",cadjsize);
+      
         Gprime->m = cadjsize;
         Gprime->adjncy = malloc(sizeof(uint32_t) * cadjsize + 1);
         Gprime->adjwgt = malloc(sizeof(uint32_t) * cadjsize + 1);
 
         #pragma omp barrier
-        /*for (i = 0 ; i <= K+1; i++){
-            printf("bvix[%d] : %d by thread :%d \n", i,bvix[i],omp_get_thread_num());
-        }*/
         #pragma omp for schedule (static)
         for (b = K; b >= 1; b--) {
 
             kstart = bvix[b + 1];
-            //printf("kstart for thread : %d is %d \n", omp_get_thread_num(),kstart);
             kend = bvix[b] + 1;
-            //printf("kend for thread : %d is %d \n", omp_get_thread_num(),kend);
             for (kix = kstart; kix >= kend; kix--) {
                 u = BV[kix - 1];
                 kadjst = G->vtx[u];
                 kadjend = G->vtx[u + 1] - 1;
-                //printf("kadjst for thread : %d is %d \n", omp_get_thread_num(),kadjst);
-                //printf("kadjend for thread : %d is %d \n", omp_get_thread_num(),kadjend);
                 for (kadj = kadjst; kadj <= kadjend; kadj++) {
                     v = G->adjncy[kadj];
                     int bt;
                     bt = Bin[v];
-                    //printf("bt : %d by thread %d\n",bt,omp_get_thread_num());
                     if (bt != b && Bmap[bt] == 0) {
                         int t = Gprime->vtx[b] - 1;
                         Gprime->adjncy[t] = bt;
-                        //printf("t : %d by thread :%d\n", t,omp_get_thread_num());
-        //                printf( "Gprime->adjncy[%d] : by thread %d is %d\n",t, omp_get_thread_num(), Gprime->adjncy[t]);
                         Bmap[bt] = G->adjwgt[kadj];
-                        //printf( "Bmap[%d] : by thread %d is %d\n",bt, omp_get_thread_num(), Bmap[bt]);
                         Gprime->vtx[b] -= 1;
-       //                 printf( "REDUCED VTX [%d] : by thread %d is %d\n",b, omp_get_thread_num(), Gprime->vtx[b]);
 
                     }
                     else if (bt != b) {
                         Bmap[bt] += G->adjwgt[kadj];
-                //        printf( "ADDED Bmap[%d] : by thread %d is %d\n",bt, omp_get_thread_num(), Bmap[bt]);
 
                     }
 
                 }
             }
             bst = priVtx[b];
-        //    printf("bst for thread : %d is %d \n", omp_get_thread_num(),bst);
             bend = priVtx[b + 1] - 1;
-         //   printf("bend for thread : %d is %d \n", omp_get_thread_num(),bend);
 
             for (bx = bst; bx <= bend; bx++) {
                 int p;
                 p = Gprime->adjncy[bx];
-            //    printf( "Bmap[%d] : by thread %d is %d\n",p, omp_get_thread_num(), Bmap[p]);
                 Gprime->adjwgt[bx] = Bmap[p];
-
-             //   printf( "Gprime->adjwgt[%d] : by thread %d is %d\n",bx, omp_get_thread_num(), Gprime->adjwgt[bx]);
                 Bmap[p] = 0;
             }
         }
@@ -815,7 +758,6 @@ struct Bins* refLDG (int K,struct graph *G,struct Bins *binha,int capacity,int t
                 max=0.0;
                 for (i=1;i<=bi;i++){
                     b=Blist[i];
-                    //printf("b : %d \n",b);
                     bwt=binha->binwgt[b];
 
                     if (currentbin==b)
@@ -842,12 +784,6 @@ struct Bins* refLDG (int K,struct graph *G,struct Bins *binha,int capacity,int t
                 }
 
                 binha->Bin[u]=bmax;
-                
-               // printf("refine bin[%d] : %d  by thread : %d \n",u,binha->Bin[u],omp_get_thread_num());
-                //printf("refine bmax : %d by thread : %d \n",bmax,omp_get_thread_num());
-               // printf("refine binwgt[%d] : %d by thread : %d\n",bmax,binha->binwgt[bmax],omp_get_thread_num());
-
-
             }
          
             double endr=omp_get_wtime();
@@ -855,11 +791,7 @@ struct Bins* refLDG (int K,struct graph *G,struct Bins *binha,int capacity,int t
 
     }
 
-      //  printf("weight of all bins : %d \n", weights);
 
-        /*for (i=1;i<=G->n;i++){
-            binha->binwgt[binha->Bin[1]]++;
-        }*/
     return binha;
 
 }
@@ -914,8 +846,7 @@ float imbalance (int K, double wavg, struct Bins* bins){
 			}
 
 		}
-	//	printf("maximb : %d\n", maximb);
-	//	printf("wavg : %f\n", wavg);
+
 
 		imbalance = (float)maximb / wavg;
 		return imbalance;
@@ -968,8 +899,7 @@ int main(int argc, char *argv[])
 	int setting = 1;
 
 	struct graph* G = readgraphfromfile(fname);
-    //showgraph(G);
-    //printf("here\n");
+
     int perm_capacity=ceil(alfa * G->n);
     struct graph* randG;
 	printf("Vertices and Edges: %d %d\n",G->n,G->m);
@@ -1013,8 +943,7 @@ int main(int argc, char *argv[])
         karray[lvl] = K;
 		time_t start = time(NULL);
         for (i = 1; i <= lvl; i++) {
-          //  printf("LEVEL : %d===================================================================\n",i);
-
+      
             float range = (float)0.0;
             if (lvl > 1)
                 range = temp / (lvl - 1);
@@ -1024,9 +953,7 @@ int main(int argc, char *argv[])
             capacity = ceil((wavg * (1 + eps)));
 
             grapharray[i] = Gprime;
-          //  if (i >= lvl)
-               // showgraph(grapharray[i]);
-          //  printf("before LDG\n");
+
             partitions = LDGpartitioning(karray[i], grapharray[i], capacity,threadnum);
           
          
@@ -1044,22 +971,14 @@ int main(int argc, char *argv[])
             binarray[i] = partitions;
            
             
-      //      Gprime = coarsening(partitions->Bin, karray[i], partitions->binwgt, grapharray[i],1);
-      //      printf("ONE THREAD COARSE : \n");
-      //      showgraph(Gprime);
+
             Gprime = coarsening(partitions->Bin, karray[i], partitions->binwgt, grapharray[i],threadnum);
-      //      printf("MORE THREAD COARSE : \n");
-        //    showgraph(Gprime);
             Gprime->m = Gprime->vtx[K + 1];
             Gprime->id = id;
             eps -= range;
 
         }
 
-
-
-
-            //printf("wtotal : %d\n", wtotal);
 
         wavg = ((double)wtotal / K);
 
@@ -1073,24 +992,18 @@ int main(int argc, char *argv[])
 
 
             binarray[templvl - 1] = refLDG(K, grapharray[templvl - 1], binarray[templvl - 1], refcapacity,threadnum);
-             //   printf("edgecuts of last ref: %f\n", edgecuts(K,grapharray[templvl - 1],binarray[templvl - 1],adjwgttotal));
-            //    printf("imbalance of last ref: %f\n", imbalance(K,wavg,binarray[templvl - 1]));
             templvl--;
         }
         int m = 2;
         while (m > 0){
-            printf("LASTREFINEMENTS :%d================\n", m);
             binarray[1] = refLDG(K, grapharray[1], binarray[1], refcapacity,threadnum);
             m--;
         }
 		
-		printf("WHOLE WALL TIME %.2f\n", (double)(time(NULL) - start));
 
         edgecutsum += edgecuts(K,grapharray[1],binarray[1],adjwgttotal);
 
         imbalancesum += imbalance(K,wavg,binarray[1]);
-    		//printf("imbalance : %f\n", imbalance(K,wavg,binarray[1]));
-
 
 	}//end of five run
 
